@@ -2,14 +2,16 @@ import java.io.*;
 import java.util.*;
 
 public class ExpenTracker {
-    // Transaction class
+
     static class Transaction implements Serializable {
         private static final long serialVersionUID = 1L;
+
         enum Type { INCOME, EXPENSE }
+
         Type type;
         String category;
         double amount;
-        int month;  // 1-12
+        int month;
 
         Transaction(Type type, String category, double amount, int month) {
             this.type = type;
@@ -23,7 +25,7 @@ public class ExpenTracker {
         }
     }
 
-    static List<Transaction> transactions = new ArrayList<Transaction>();
+    static List<Transaction> transactions = new ArrayList<>();
     static Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
@@ -32,9 +34,10 @@ public class ExpenTracker {
             System.out.println("\nExpense Tracker Menu:");
             System.out.println("1. Add Transaction");
             System.out.println("2. View Monthly Summary");
-            System.out.println("3. Load from File");
-            System.out.println("4. Save to File");
+            System.out.println("3. Load from File (Serialized)");
+            System.out.println("4. Save to File (Serialized)");
             System.out.println("5. Exit");
+            System.out.println("6. Load Transactions from Text File");
             System.out.print("Choose an option: ");
 
             int choice = readInt();
@@ -44,9 +47,10 @@ public class ExpenTracker {
                 case 2: viewSummary(); break;
                 case 3: loadFromFile(); break;
                 case 4: saveToFile(); break;
-                case 5: 
+                case 5:
                     System.out.println("Exiting. Goodbye!");
                     return;
+                case 6: loadFromTextFile(); break;
                 default:
                     System.out.println("Invalid choice, please try again.");
             }
@@ -132,8 +136,8 @@ public class ExpenTracker {
         double totalIncome = 0;
         double totalExpense = 0;
 
-        Map<String, Double> incomeCategories = new HashMap<String, Double>();
-        Map<String, Double> expenseCategories = new HashMap<String, Double>();
+        Map<String, Double> incomeCategories = new HashMap<>();
+        Map<String, Double> expenseCategories = new HashMap<>();
 
         for (Transaction tr : transactions) {
             if (tr.month == month) {
@@ -180,6 +184,50 @@ public class ExpenTracker {
             System.out.println("Data loaded from " + filename);
         } catch (IOException | ClassNotFoundException e) {
             System.out.println("Error loading file: " + e.getMessage());
+        }
+    }
+
+    private static void loadFromTextFile() {
+        System.out.print("Enter text filename to load transactions ");
+        String filename = scanner.next();
+        File file = new File(filename);
+
+        if (!file.exists()) {
+            System.out.println("File not found.");
+            return;
+        }
+
+        int count = 0;
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length != 4) {
+                    System.out.println("Invalid line (skipped): " + line);
+                    continue;
+                }
+
+                try {
+                    Transaction.Type type = Transaction.Type.valueOf(parts[0].trim().toUpperCase());
+                    String category = parts[1].trim();
+                    double amount = Double.parseDouble(parts[2].trim());
+                    int month = Integer.parseInt(parts[3].trim());
+
+                    if (month < 1 || month > 12) {
+                        System.out.println("Invalid month in line (skipped): " + line);
+                        continue;
+                    }
+
+                    transactions.add(new Transaction(type, category, amount, month));
+                    count++;
+
+                } catch (Exception e) {
+                    System.out.println("Error parsing line (skipped): " + line);
+                }
+            }
+            System.out.println("Loaded " + count + " transactions from " + filename);
+        } catch (IOException e) {
+            System.out.println("Error reading file: " + e.getMessage());
         }
     }
 
